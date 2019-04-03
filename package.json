@@ -1,0 +1,30 @@
+{
+  "name": "notion",
+  "version": "1.0.0",
+  "description": "Custom easy motion implementation",
+  "main": "index.ts",
+  "scripts": {
+    "tsc": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "concurrently \"tsc --watch\" \"nodemon --watch index.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tbo/notion.git"
+  },
+  "author": "Thomas Bonk",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/tbo/notion/issues"
+  },
+  "homepage": "https://github.com/tbo/notion#readme",
+  "dependencies": {
+    "@types/msgpack-lite": "^0.1.6",
+    "@types/node": "^11.13.0",
+    "neovim": "^4.5.0"
+  },
+  "devDependencies": {
+    "concurrently": "^4.1.0",
+    "nodemon": "^1.18.10"
+  }
+}
