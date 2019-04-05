@@ -4,9 +4,8 @@
   "description": "Custom easy motion implementation",
   "main": "index.ts",
   "scripts": {
-    "tsc": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "concurrently \"tsc --watch\" \"nodemon --watch index.js\""
+    "watch": "concurrently \"tsc --watch\" \"nodemon --watch index.js\"",
+    "build": "tsc --outDir rplugin/node/notion"
   },
   "repository": {
     "type": "git",

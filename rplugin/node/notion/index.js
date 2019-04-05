@@ -1,26 +1,14 @@
-import { Buffer, Window, NvimPlugin } from "neovim";
-import { VimValue } from "neovim/lib/types/VimValue";
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const labelChars = "jkfdls;aghnvmcieurwo,xz.qpJKFDLS:AGHNVMCIEURWO<XZ>QP";
-
 const minChar = 2;
-
-const toString = (promise: Promise<VimValue>): Promise<string> => promise.then(value => String(value));
-
-const toNumber = (promise: Promise<VimValue>): Promise<number> => promise.then(value => Number(value));
-
-interface Hit {
-    offset: [number, number];
-    position: [number, number];
-}
-
-export default (plugin: NvimPlugin) => {
+const toString = (promise) => promise.then(value => String(value));
+const toNumber = (promise) => promise.then(value => Number(value));
+exports.default = (plugin) => {
     const { nvim } = plugin;
-
     const getChar = () => toString(nvim.eval("nr2char(getchar())"));
-
-    const createLabel = async (row: number, col: number, label: string): Promise<Window> => {
-        const buffer = (await nvim.createBuffer(false, false)) as Buffer;
+    const createLabel = async (row, col, label) => {
+        const buffer = (await nvim.createBuffer(false, false));
         await buffer.setLines(label, { start: 0, end: -1, strictIndexing: true });
         const window = (await nvim.openWindow(buffer, false, {
             relative: "cursor",
@@ -29,21 +17,19 @@ export default (plugin: NvimPlugin) => {
             width: label.length,
             height: 1,
             focusable: false
-        })) as Window;
+        }));
         await window.setOption("number", false);
         await window.setOption("relativenumber", false);
         await window.setOption("signcolumn", "no");
         await window.setOption("winhl", "Normal:NotionLabel");
         return window;
     };
-
-    const indexesOf = (text: string, pattern: RegExp, prev: number[] = []): number[] => {
+    const indexesOf = (text, pattern, prev = []) => {
         const result = pattern.exec(text);
         return result ? indexesOf(text, pattern, [...prev, result.index]) : prev;
     };
-
-    const search = async (query: string): Promise<Hit[]> => {
-        const [_, cursorRow, cursorColumn] = (await nvim.eval("getcurpos()")) as string[];
+    const search = async (query) => {
+        const [_, cursorRow, cursorColumn] = (await nvim.eval("getcurpos()"));
         const hasUpperCase = query.toLowerCase() != query;
         const rowOffset = Number(cursorRow) - 1;
         const columnOffset = Number(cursorColumn) - 1;
@@ -52,20 +38,11 @@ export default (plugin: NvimPlugin) => {
         const lines = await nvim.buffer.getLines({ start, end, strictIndexing: true });
         const queryPattern = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
         return lines
-            .reduce(
-                (prev: [number, number][], line, row) =>
-                    prev.concat(
-                        indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map(
-                            (index): [number, number] => [row + start, index]
-                        )
-                    ),
-                []
-            )
+            .reduce((prev, line, row) => prev.concat(indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map((index) => [row + start, index])), [])
             .filter(([row, column]) => rowOffset !== row || column !== columnOffset)
-            .map(([row, column]): Hit => ({ position: [row + 1, column], offset: [row - rowOffset, column - columnOffset] }))
+            .map(([row, column]) => ({ position: [row + 1, column], offset: [row - rowOffset, column - columnOffset] }))
             .sort((a, b) => Math.abs(a.offset[0]) - Math.abs(b.offset[0]));
     };
-
     const execute = async () => {
         let query = "";
         let hits;
@@ -86,8 +63,6 @@ export default (plugin: NvimPlugin) => {
         }
         labels.forEach(label => label.close());
     };
-
     plugin.setOptions({ dev: true });
-
     plugin.registerCommand("NotionJump", execute, { sync: false });
 };
