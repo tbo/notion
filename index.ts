@@ -36,9 +36,9 @@ interface Hit {
     position: [number, number];
 }
 
-const indexesOf = (text: string, searchString: string, prev: number[] = []): number[] => {
-    const index = text.indexOf(searchString, prev.slice(-1)[0] + 1);
-    return index === -1 ? prev : indexesOf(text, searchString, [...prev, index]);
+const indexesOf = (text: string, pattern: RegExp, prev: number[] = []): number[] => {
+    const result = pattern.exec(text);
+    return result ? indexesOf(text, pattern, [...prev, result.index]) : prev;
 };
 
 const search = async (query: string): Promise<Hit[]> => {
@@ -49,14 +49,16 @@ const search = async (query: string): Promise<Hit[]> => {
     const start = await toNumber(nvim.eval('line("w0") - 1'));
     const end = await toNumber(nvim.eval('line("w$")'));
     const lines = await nvim.buffer.getLines({ start, end, strictIndexing: true });
+    const queryPattern = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
     return lines
         .reduce(
             (prev: [number, number][], line, row) =>
                 prev.concat(
-                    indexesOf(hasUpperCase ? line : line.toLowerCase(), query).map((index): [number, number] => [row + start, index])
+                    indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map((index): [number, number] => [row + start, index])
                 ),
             []
         )
+        .filter(([row, column]) => rowOffset !== row || column !== columnOffset)
         .map(([row, column]): Hit => ({ position: [row + 1, column], offset: [row - rowOffset, column - columnOffset] }))
         .sort((a, b) => Math.abs(a.offset[0]) - Math.abs(b.offset[0]));
 };
