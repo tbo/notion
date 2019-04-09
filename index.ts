@@ -47,6 +47,9 @@ export default (plugin: NvimPlugin) => {
         const hasUpperCase = query.toLowerCase() != query;
         const rowOffset = Number(cursorRow) - 1;
         const columnOffset = Number(cursorColumn) - 1;
+        const windowColumn = await toNumber(nvim.eval("wincol()"));
+        const windowWidth = await toNumber(nvim.eval("winwidth(0)"));
+        const windowOffset = await toNumber(nvim.eval("((&number||&relativenumber)?&numberwidth:0)-&foldcolumn+(&signcolumn=='yes'?2:0)"));
         const start = await toNumber(nvim.eval('line("w0") - 1'));
         const end = await toNumber(nvim.eval('line("w$")'));
         const lines = await nvim.buffer.getLines({ start, end, strictIndexing: true });
@@ -63,6 +66,7 @@ export default (plugin: NvimPlugin) => {
             )
             .filter(([row, column]) => rowOffset !== row || column !== columnOffset)
             .map(([row, column]): Hit => ({ position: [row + 1, column], offset: [row - rowOffset, column - columnOffset] }))
+            .filter(({ offset: [_, column] }) => windowOffset - windowColumn < column && column <= windowWidth - windowColumn)
             .sort((a, b) => Math.abs(a.offset[0]) - Math.abs(b.offset[0]));
     };
 
@@ -71,6 +75,7 @@ export default (plugin: NvimPlugin) => {
         let hits;
         do {
             query += await getChar();
+            await nvim.outWrite("> " + query + "\n");
             hits = await search(query);
             switch (hits.length) {
                 case 0:
