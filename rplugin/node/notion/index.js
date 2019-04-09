@@ -18,10 +18,12 @@ exports.default = (plugin) => {
             height: 1,
             focusable: false
         }));
-        await window.setOption("number", false);
-        await window.setOption("relativenumber", false);
-        await window.setOption("signcolumn", "no");
-        await window.setOption("winhl", "Normal:NotionLabel");
+        await Promise.all([
+            window.setOption("number", false),
+            window.setOption("relativenumber", false),
+            window.setOption("signcolumn", "no"),
+            window.setOption("winhl", "Normal:NotionLabel")
+        ]);
         return window;
     };
     const indexesOf = (text, pattern, prev = []) => {
@@ -29,16 +31,19 @@ exports.default = (plugin) => {
         return result ? indexesOf(text, pattern, [...prev, result.index]) : prev;
     };
     const search = async (query) => {
-        const [_, cursorRow, cursorColumn] = (await nvim.eval("getcurpos()"));
-        const hasUpperCase = query.toLowerCase() != query;
-        const rowOffset = Number(cursorRow) - 1;
-        const columnOffset = Number(cursorColumn) - 1;
-        const windowColumn = await toNumber(nvim.eval("wincol()"));
-        const windowWidth = await toNumber(nvim.eval("winwidth(0)"));
-        const windowOffset = await toNumber(nvim.eval("((&number||&relativenumber)?&numberwidth:0)-&foldcolumn+(&signcolumn=='yes'?2:0)"));
-        const start = await toNumber(nvim.eval('line("w0") - 1'));
-        const end = await toNumber(nvim.eval('line("w$")'));
+        const [cursorRow, cursorColumn, windowColumn, windowWidth, windowOffset, start, end] = await Promise.all([
+            nvim.eval("line('.')"),
+            nvim.eval("col('.')"),
+            nvim.eval("wincol()"),
+            nvim.eval("winwidth(0)"),
+            nvim.eval("((&number||&relativenumber)?&numberwidth:0)-&foldcolumn+(&signcolumn=='yes'?2:0)"),
+            nvim.eval('line("w0") - 1'),
+            nvim.eval('line("w$")')
+        ].map(toNumber));
         const lines = await nvim.buffer.getLines({ start, end, strictIndexing: true });
+        const rowOffset = cursorRow - 1;
+        const columnOffset = cursorColumn - 1;
+        const hasUpperCase = query.toLowerCase() != query;
         const queryPattern = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
         return lines
             .reduce((prev, line, row) => prev.concat(indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map((index) => [row + start, index])), [])
