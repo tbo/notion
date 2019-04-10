@@ -5,13 +5,18 @@ const labelChars = "jkfdls;aghnvmcieurwo,xz.qpJKFDLS:AGHNVMCIEURWO<XZ>QP";
 
 const minChar = 2;
 
-const toString = (promise: Promise<VimValue>): Promise<string> => promise.then(value => String(value));
+const transform = <T>(transformer: (source: VimValue) => T) => (promise: Promise<VimValue>): Promise<T> =>
+    promise.then(value => transformer(value));
 
-const toNumber = (promise: Promise<VimValue>): Promise<number> => promise.then(value => Number(value));
+const toString = transform(String);
+
+const toNumber = transform(Number);
+
+type Coordinate = [number, number];
 
 interface Hit {
-    offset: [number, number];
-    position: [number, number];
+    offset: Coordinate;
+    position: Coordinate;
 }
 
 export default (plugin: NvimPlugin) => {
@@ -45,10 +50,10 @@ export default (plugin: NvimPlugin) => {
     };
 
     const search = async (query: string): Promise<Hit[]> => {
-        const [cursorRow, cursorColumn, windowColumn, windowWidth, windowOffset, start, end] = await Promise.all(
+        const [rowOffset, columnOffset, windowColumn, windowWidth, windowOffset, start, end] = await Promise.all(
             [
-                nvim.eval("line('.')"),
-                nvim.eval("col('.')"),
+                nvim.eval("line('.') - 1"),
+                nvim.eval("col('.') - 1"),
                 nvim.eval("wincol()"),
                 nvim.eval("winwidth(0)"),
                 nvim.eval("((&number||&relativenumber)?&numberwidth:0)-&foldcolumn+(&signcolumn=='yes'?2:0)"),
@@ -57,46 +62,54 @@ export default (plugin: NvimPlugin) => {
             ].map(toNumber)
         );
         const lines = await nvim.buffer.getLines({ start, end, strictIndexing: true });
-        const rowOffset = cursorRow - 1;
-        const columnOffset = cursorColumn - 1;
         const hasUpperCase = query.toLowerCase() != query;
         const queryPattern = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "g");
+
+        const getPositionsOfMatches = (prev: Coordinate[], line: string, row: number) => [
+            ...prev,
+            ...indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map((index): Coordinate => [row + start, index])
+        ];
+        const omitCurrentPosition = ([row, column]: Coordinate) => row !== rowOffset || column !== columnOffset;
+        const omitOutsideOfViewport = ({ offset: [_, column] }: Hit) =>
+            windowOffset - windowColumn < column && column <= windowWidth - windowColumn;
+        const sortByDistanceFromCursor = (a: Hit, b: Hit) => Math.abs(a.offset[0]) - Math.abs(b.offset[0]);
+        const transformPositionToHit = ([row, column]: Coordinate): Hit => ({
+            position: [row + 1, column],
+            offset: [row - rowOffset, column - columnOffset]
+        });
+
         return lines
-            .reduce(
-                (prev: [number, number][], line, row) =>
-                    prev.concat(
-                        indexesOf(hasUpperCase ? line : line.toLowerCase(), queryPattern).map(
-                            (index): [number, number] => [row + start, index]
-                        )
-                    ),
-                []
-            )
-            .filter(([row, column]) => rowOffset !== row || column !== columnOffset)
-            .map(([row, column]): Hit => ({ position: [row + 1, column], offset: [row - rowOffset, column - columnOffset] }))
-            .filter(({ offset: [_, column] }) => windowOffset - windowColumn < column && column <= windowWidth - windowColumn)
-            .sort((a, b) => Math.abs(a.offset[0]) - Math.abs(b.offset[0]));
+            .reduce(getPositionsOfMatches, [])
+            .filter(omitCurrentPosition)
+            .map(transformPositionToHit)
+            .filter(omitOutsideOfViewport)
+            .sort(sortByDistanceFromCursor);
+    };
+
+    const getHits = async (prev: string = ""): Promise<Hit[]> => {
+        const query = prev + (await getChar());
+        await nvim.outWrite("> " + query + "\n");
+        const hits = await search(query);
+        return query.length >= minChar || hits.length < 2 ? hits : getHits(query);
+    };
+
+    const getJumpTarget = async (hits: Hit[]): Promise<Hit> => {
+        if (hits.length <= 1) {
+            return hits[0];
+        }
+        const labels = await Promise.all(hits.map(({ offset: [row, column] }, index) => createLabel(row, column, labelChars[index])));
+        const target = hits[labelChars.indexOf(await getChar())];
+        labels.forEach(label => label.close());
+        return target;
     };
 
     const execute = async () => {
-        let query = "";
-        let hits;
-        do {
-            query += await getChar();
-            await nvim.outWrite("> " + query + "\n");
-            hits = await search(query);
-            switch (hits.length) {
-                case 0:
-                    return await nvim.outWrite("no hits!\n");
-                case 1:
-                    return (nvim.window.cursor = hits[0].position);
-            }
-        } while (query.length < minChar);
-        const labels = await Promise.all(hits.map(({ offset: [row, column] }, index) => createLabel(row, column, labelChars[index])));
-        const target = hits[labelChars.indexOf(await getChar())];
+        const target = await getJumpTarget(await getHits());
         if (target) {
             nvim.window.cursor = target.position;
+        } else {
+            await nvim.outWrite("No jump target!\n");
         }
-        labels.forEach(label => label.close());
     };
 
     plugin.setOptions({ dev: true });
