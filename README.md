@@ -22,7 +22,7 @@ Install
 
 Example Configuration
 ---------------------
-```
+```viml
 " vim-plug boilerplate
 call plug#begin('~/.vim/plugged')
 Plug 'tbo/notion'
