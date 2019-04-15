@@ -112,7 +112,7 @@ export default (plugin: NvimPlugin) => {
         }
     };
 
-    plugin.setOptions({ dev: true });
+    plugin.setOptions({ dev: false });
 
     plugin.registerCommand("NotionJump", execute, { sync: false });
 };
