@@ -13,12 +13,16 @@ Usage
 Install
 -------
 
+Prerequisites: [Node.Js](https://nodejs.org/en/) + [Node Plugin Host](https://github.com/neovim/node-client)
+
 - [vim-plug](https://github.com/junegunn/vim-plug)
   - `Plug 'tbo/notion'`
 - [Pathogen](https://github.com/tpope/vim-pathogen)
   - `git clone git://github.com/tbo/notion.git ~/.vim/bundle/notion`
 - Manual installation:
   - Copy the files to your `.vim` directory.
+
+Register the plugin with `:UpdateRemotePlugins`
 
 Example Configuration
 ---------------------
