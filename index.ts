@@ -1,7 +1,7 @@
 import { Buffer, Window, NvimPlugin } from "neovim";
 import { VimValue } from "neovim/lib/types/VimValue";
 
-const labelChars = "jkfdls;aghnvmcieurwo,xz.qpJKFDLS:AGHNVMCIEURWO<XZ>QP";
+const labelChars = "jkfdls;aghnvmcieurwo,xz.qpJKFDLS:AGHNVMCIEURWO<XZ>QP1234567890-=";
 
 const minChar = 2;
 
