@@ -10,6 +10,9 @@ Usage
 2. Type in the first two characters of the target word
 3. Choose a jump target by hitting the corresponding key
 
+
+![Usage](https://raw.githubusercontent.com/tbo/notion/master/screencapture.gif)
+
 Install
 -------
 
