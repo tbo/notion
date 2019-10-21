@@ -1,7 +1,10 @@
 Notion
 ======
 
-Notion allows you to quickly jump to any word within the current viewport. It was build to be a minimalist alternative to [EasyMotion](https://github.com/Lokaltog/vim-easymotion), that avoids most of its hacks by using neovim's upcoming floating window feature. It is therefore only possible to use notion with neovim master until version 4.0 is released.
+Notion allows you to quickly jump to any word within the current viewport. It 
+was build to be a minimalist alternative to 
+[EasyMotion](https://github.com/Lokaltog/vim-easymotion), that avoids most of 
+its hacks by using neovim's floating window feature. 
 
 Usage
 -----
@@ -16,7 +19,8 @@ Usage
 Install
 -------
 
-Prerequisites: [Node.Js](https://nodejs.org/en/) + [Node Plugin Host](https://github.com/neovim/node-client)
+Prerequisites: Neovim 4.0 + [Node.Js](https://nodejs.org/en/) + [Node Plugin 
+Host](https://github.com/neovim/node-client)
 
 - [vim-plug](https://github.com/junegunn/vim-plug)
   - `Plug 'tbo/notion'`
