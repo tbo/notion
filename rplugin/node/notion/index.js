@@ -86,6 +86,6 @@ exports.default = (plugin) => {
             await nvim.outWrite("No jump target!\n");
         }
     };
-    plugin.setOptions({ dev: true });
+    plugin.setOptions({ dev: false });
     plugin.registerCommand("NotionJump", execute, { sync: false });
 };

@@ -18,12 +18,12 @@
   },
   "homepage": "https://github.com/tbo/notion#readme",
   "dependencies": {
-    "@types/msgpack-lite": "^0.1.6",
-    "@types/node": "^11.13.0",
+    "@types/msgpack-lite": "^0.1.7",
+    "@types/node": "^12.11.2",
     "neovim": "^4.5.0"
   },
   "devDependencies": {
-    "concurrently": "^4.1.0",
-    "nodemon": "^1.18.10"
+    "concurrently": "^5.0.0",
+    "nodemon": "^1.19.4"
   }
 }
